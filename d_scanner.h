@@ -25,7 +25,7 @@ private:
 
     QHash<QByteArray, QVector<QString>> buffer;
     void release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates);
-    const size_t RELEASE_NUMBER = 10;
+    const size_t RELEASE_NUMBER = 30;
 
     QString root;
 

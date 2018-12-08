@@ -19,7 +19,7 @@ QByteArray d_scanner::get_file_hash(QString const& path) {
     QFile file(path);
 
     if (file.open(QIODevice::ReadOnly)) {
-        const size_t BUFFER_SIZE = 4096;
+        const size_t BUFFER_SIZE = 4 * 4096;
         QByteArray content;
         while (true) {
             content = file.read(BUFFER_SIZE);
