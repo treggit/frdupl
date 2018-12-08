@@ -9,7 +9,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  -fsanitize=address,undefined")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-set(CMAKE_PREFIX_PATH /usr/local/Cellar/qt/5.10.1)
+#set(CMAKE_PREFIX_PATH /usr/local/Cellar/qt/5.10.1)
 
 find_package(Qt5Widgets REQUIRED)
 
