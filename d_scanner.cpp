@@ -19,17 +19,22 @@ QByteArray d_scanner::get_file_hash(QString const& path) {
     QFile file(path);
 
     if (file.open(QIODevice::ReadOnly)) {
-        const size_t BUFFER_SIZE = 4 * 4096;
+        const size_t BUFFER_SIZE = 4096;
         QByteArray content;
         while (true) {
             content = file.read(BUFFER_SIZE);
-            if (content.size() == 0 || isInterruptionRequested()) {
+            if (content.size() == 0) {
                 break;
+            }
+            if (isInterruptionRequested()) {
+                return QByteArray();
             }
             qhash.addData(content);
         }
     } else {
-        emit throw_message(QString("Couldn't open file: ").append(path));
+        if (!isInterruptionRequested()) {
+            emit throw_message(QString("Couldn't open file: ").append(path));
+        }
         return QByteArray();
     }
 
@@ -83,18 +88,14 @@ void d_scanner::find_duplicates(QString const& dir) {
         }
     }
 
-    release_duplicates(duplicate_hashes, duplicates);
-
-    if (isInterruptionRequested()) {
-        emit interrupted();
-    }
+    release_duplicates(duplicate_hashes, duplicates, true);
 }
 
 void d_scanner::run() {
     find_duplicates(root);
 }
 
-void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates) {
+void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, bool last) {
     if (isInterruptionRequested()) {
         return;
     }
@@ -105,5 +106,5 @@ void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray
     }
     hashes.resize(0);
 
-    emit return_duplicates(res);
+    emit return_duplicates(res, last);
 }

@@ -42,11 +42,9 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::init_connections() {
-    connect(scanner, SIGNAL(return_duplicates(QVector<QVector<QString>>)), this, SLOT(add_duplicates(QVector<QVector<QString>>)));
+    connect(scanner, SIGNAL(return_duplicates(QVector<QVector<QString>>, bool)), this, SLOT(add_duplicates(QVector<QVector<QString>>, bool)));
     connect(scanner, SIGNAL(finished()), scanner, SLOT(deleteLater()));
-    connect(scanner, SIGNAL(finished()), this, SLOT(show_info()));
-    interrupted = false;
-    connect(scanner, SIGNAL(interrupted()), this, SLOT(interrupted_handler()));
+    //connect(scanner, SIGNAL(finished()), this, SLOT(show_info()));
     connect(scanner, SIGNAL(throw_message(QString)), this, SLOT(message_handler(QString)));
     connect(ui->pushButton, SIGNAL(clicked(bool)), this, SLOT(try_exit_scanning()));
 
@@ -68,16 +66,17 @@ void MainWindow::on_action_scan_triggered()
     ui->pushButton->setVisible(true);
     ui->label->setText("In progress...");
     scanning = true;
+    duplicate_groups_cnt = 0;
 
     ui->treeWidget->clear();
     scanner->start();
 }
 
-void MainWindow::add_duplicates(QVector<QVector<QString>> duplicates) {
-    if (interrupted) {
-        return;
-    }
+void MainWindow::add_duplicates(QVector<QVector<QString>> duplicates, bool last) {
     duplicate_groups_cnt += duplicates.size();
+    if (last) {
+        show_info();
+    }
     for (auto&& d_group : duplicates) {
         auto item = new QTreeWidgetItem(ui->treeWidget);
         qint64 sz = QFile(d_group[0]).size();
@@ -93,11 +92,11 @@ void MainWindow::add_duplicates(QVector<QVector<QString>> duplicates) {
 
         ui->treeWidget->addTopLevelItem(item);
     }
+
 }
 
 void MainWindow::show_info() {
     scanning = false;
-
     ui->pushButton->setVisible(false);
     ui->label->setText(QString("In progress... Done! %1 groups of duplicates were found.").arg(QString::number(duplicate_groups_cnt)));
     setWindowTitle(QString("Duplicates - %1").arg(current_dir));
@@ -155,25 +154,21 @@ int MainWindow::exec_message_box(QString const& message) {
 }
 
 void MainWindow::message_handler(QString text) {
-    if (scanner->isInterruptionRequested()) {
-        return;
-    }
     QMessageBox msgB;
     msgB.setText(text);
     msgB.exec();
 }
 
 void MainWindow::try_exit_scanning() {
+    if (scanner->isInterruptionRequested()) {
+        return;
+    }
     auto res = exec_message_box(QString("Are you sure you want to cancel scanning?"));
 
     if (res == QMessageBox::Yes) {
         scanner->requestInterruption();
         ui->label->setText("Cancelled");
+        ui->pushButton->setVisible(false);
+        scanning = false;
     }
-}
-
-void MainWindow::interrupted_handler() {
-    ui->pushButton->setVisible(false);
-    interrupted = true;
-    scanning = false;
 }

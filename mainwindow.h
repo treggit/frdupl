@@ -19,14 +19,13 @@ public:
 
 private slots:
     void on_action_scan_triggered();
-    void add_duplicates(QVector<QVector<QString>> duplicates);
+    void add_duplicates(QVector<QVector<QString>> duplicates, bool last);
     void on_treeWidget_customContextMenuRequested(QPoint const& pos);
     void open_file();
     void open_file_in_folder();
     void delete_file();
     void message_handler(QString text);
     void try_exit_scanning();
-    void interrupted_handler();
     void show_info();
 
 

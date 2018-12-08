@@ -24,15 +24,14 @@ private:
     QVector<QString> first_observe(QString const& dir);
 
     QHash<QByteArray, QVector<QString>> buffer;
-    void release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates);
-    const size_t RELEASE_NUMBER = 30;
+    void release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, bool last = false);
+    const size_t RELEASE_NUMBER = 100;
 
     QString root;
 
 signals:
-    void return_duplicates(QVector<QVector<QString>> duplicates);
+    void return_duplicates(QVector<QVector<QString>> duplicates, bool last = false);
     void throw_message(QString text);
-    void interrupted();
 };
 
 #endif // SCANNER_H
