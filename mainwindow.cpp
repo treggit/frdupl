@@ -12,10 +12,12 @@
 #include <fcntl.h>
 #include <QPushButton>
 #include <QAbstractButton>
+#include <memory>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    scanner(new d_scanner)
 {
     ui->setupUi(this);
 
@@ -27,25 +29,24 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->treeWidget->header()->setStretchLastSection(false);
 
     qRegisterMetaType<QVector<QVector<QString>>>();
-
-    ui->treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->treeWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
-            this, SLOT(on_treeWidget_customContextMenuRequested(const QPoint&)));
-    connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),
-            this, SLOT(open_file()));
     ui->pushButton->setVisible(false);
+    ui->treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    init_connections();
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
 }
 
 void MainWindow::init_connections() {
-    connect(scanner, SIGNAL(return_duplicates(QVector<QVector<QString>>, bool)), this, SLOT(add_duplicates(QVector<QVector<QString>>, bool)));
-    connect(scanner, SIGNAL(finished()), scanner, SLOT(deleteLater()));
-    //connect(scanner, SIGNAL(finished()), this, SLOT(show_info()));
-    connect(scanner, SIGNAL(throw_message(QString)), this, SLOT(message_handler(QString)));
+    connect(scanner.get(), SIGNAL(return_duplicates(QVector<QVector<QString>>, bool)), this, SLOT(add_duplicates(QVector<QVector<QString>>, bool)));
+    connect(scanner.get(), SIGNAL(throw_message(QString)), this, SLOT(message_handler(QString)));
+    connect(ui->treeWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
+            this, SLOT(on_treeWidget_customContextMenuRequested(const QPoint&)));
+    connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),
+            this, SLOT(open_file()));
+
     connect(ui->pushButton, SIGNAL(clicked(bool)), this, SLOT(try_exit_scanning()));
 
 }
@@ -61,8 +62,8 @@ void MainWindow::on_action_scan_triggered()
     current_dir = QFileDialog::getExistingDirectory(this, "Select Directory for Scanning",
                                                      QString(),
                                                      QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-    scanner = new d_scanner(current_dir);
-    init_connections();
+    scanner->set_root(current_dir);
+    //init_connections();
     ui->pushButton->setVisible(true);
     ui->label->setText("In progress...");
     scanning = true;

@@ -10,9 +10,13 @@
 #include <iostream>
 #include <QMessageBox>
 
-d_scanner::d_scanner(QString const& dir) : root(dir) {}
+d_scanner::d_scanner() = default;
 
 d_scanner::~d_scanner() = default;
+
+void d_scanner::set_root(QString const& r) {
+    root = r;
+}
 
 QByteArray d_scanner::get_file_hash(QString const& path) {
     QCryptographicHash qhash(QCryptographicHash::Md5);
@@ -70,6 +74,7 @@ void d_scanner::find_duplicates(QString const& dir) {
     QHash<QByteArray, QVector<QString>> duplicates;
     QVector<QByteArray> duplicate_hashes;
     qint64 cur_size = 0, prev_size = 0;
+
     for (auto&& file : files) {
         cur_size = QFile(file).size();
         if (cur_size != prev_size && duplicate_hashes.size() > RELEASE_NUMBER) {
@@ -105,6 +110,7 @@ void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray
         res.append(duplicates[hash]);
     }
     hashes.resize(0);
+
 
     emit return_duplicates(res, last);
 }

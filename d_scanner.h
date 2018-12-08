@@ -12,18 +12,18 @@ class d_scanner : public QThread {
     Q_OBJECT
 
 public:
-    explicit d_scanner(QString const& dir);
+    explicit d_scanner();
     ~d_scanner();
 
     void find_duplicates(QString const& dir);
 
     void run() override;
+    void set_root(QString const& root);
 
 private:
     QByteArray get_file_hash(QString const& path);
     QVector<QString> first_observe(QString const& dir);
 
-    QHash<QByteArray, QVector<QString>> buffer;
     void release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, bool last = false);
     const size_t RELEASE_NUMBER = 100;
 

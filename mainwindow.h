@@ -30,13 +30,14 @@ private slots:
 
 
 private:
-    Ui::MainWindow* ui;
+    std::unique_ptr<Ui::MainWindow> ui;
+    std::unique_ptr<d_scanner> scanner;
+
     QString current_dir = QString();
     QAction* open_action;
     QAction* open_in_folder_action;
     QAction* delete_file_action;
     size_t duplicate_groups_cnt = 0;
-    d_scanner* scanner;
     bool interrupted = false;
     bool scanning = false;
 
