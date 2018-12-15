@@ -37,13 +37,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+
 }
 
 void MainWindow::init_connections() {
-    connect(scanner.get(), SIGNAL(return_duplicates(QVector<QVector<QString>>, bool)), this, SLOT(add_duplicates(QVector<QVector<QString>>, bool)));
+    connect(scanner.get(), SIGNAL(return_duplicates(QVector<QVector<QString>>, bool)),
+            this, SLOT(add_duplicates(QVector<QVector<QString>>, bool)));
+
     connect(scanner.get(), SIGNAL(throw_message(QString)), this, SLOT(message_handler(QString)));
+
     connect(ui->treeWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
             this, SLOT(on_treeWidget_customContextMenuRequested(const QPoint&)));
+
     connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),
             this, SLOT(open_file()));
 
@@ -53,24 +58,33 @@ void MainWindow::init_connections() {
 
 void MainWindow::on_action_scan_triggered()
 {
-    if (scanning) {
-        QMessageBox msg_box;
-        msg_box.setText("Scanning in progress");
-        msg_box.exec();
-        return;
-    }
     current_dir = QFileDialog::getExistingDirectory(this, "Select Directory for Scanning",
                                                      QString(),
                                                      QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (current_dir.isEmpty()) {
+        return;
+    }
+    if (scanning) {
+        try_exit_scanning();
+    }
     scanner->set_root(current_dir);
-    //init_connections();
+    prepare_window_for_scanning();
+    scanner->start();
+}
+
+void MainWindow::prepare_window_for_scanning() {
+    ui->treeWidget->clear();
     ui->pushButton->setVisible(true);
     ui->label->setText("In progress...");
     scanning = true;
     duplicate_groups_cnt = 0;
+}
 
-    ui->treeWidget->clear();
-    scanner->start();
+void MainWindow::show_info() {
+    ui->pushButton->setVisible(false);
+    ui->label->setText(QString("In progress... Done! %1 groups of duplicates were found.").arg(QString::number(duplicate_groups_cnt)));
+    scanning = false;
+    setWindowTitle(QString("Duplicates - %1").arg(current_dir));
 }
 
 void MainWindow::add_duplicates(QVector<QVector<QString>> duplicates, bool last) {
@@ -94,13 +108,6 @@ void MainWindow::add_duplicates(QVector<QVector<QString>> duplicates, bool last)
         ui->treeWidget->addTopLevelItem(item);
     }
 
-}
-
-void MainWindow::show_info() {
-    scanning = false;
-    ui->pushButton->setVisible(false);
-    ui->label->setText(QString("In progress... Done! %1 groups of duplicates were found.").arg(QString::number(duplicate_groups_cnt)));
-    setWindowTitle(QString("Duplicates - %1").arg(current_dir));
 }
 
 void MainWindow::on_treeWidget_customContextMenuRequested(const QPoint& pos) {
@@ -167,9 +174,19 @@ void MainWindow::try_exit_scanning() {
     auto res = exec_message_box(QString("Are you sure you want to cancel scanning?"));
 
     if (res == QMessageBox::Yes) {
-        scanner->requestInterruption();
-        ui->label->setText("Cancelled");
         ui->pushButton->setVisible(false);
-        scanning = false;
+        ui->label->setText("Cancelling...");
+        kill_scanner();
+        ui->label->setText("Cancelled");
     }
+}
+
+void MainWindow::kill_scanner() {
+    scanner->requestInterruption();
+    scanner->wait();
+    scanning = false;
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+    kill_scanner();
 }

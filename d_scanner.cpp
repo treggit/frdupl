@@ -51,6 +51,9 @@ QVector<QString> d_scanner::first_observe(QString const& dir) {
     while (it.hasNext()) {
         QString path = it.next();
         clasters[it.fileInfo().size()].append(std::move(path));
+        if (isInterruptionRequested()) {
+            return {};
+        }
     }
 
     QVector<QString> res;
@@ -62,6 +65,10 @@ QVector<QString> d_scanner::first_observe(QString const& dir) {
 
         for (auto&& file : claster) {
             res.append(std::move(file));
+        }
+
+        if (isInterruptionRequested()) {
+            return {};
         }
     }
 
@@ -89,7 +96,7 @@ void d_scanner::find_duplicates(QString const& dir) {
         }
 
         if (isInterruptionRequested()) {
-            break;
+            return;
         }
     }
 
