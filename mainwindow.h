@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTreeWidgetItem>
 #include "d_scanner.h"
+#include <memory>
 
 namespace Ui {
 class MainWindow;

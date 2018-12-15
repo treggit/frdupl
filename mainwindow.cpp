@@ -13,6 +13,7 @@
 #include <QPushButton>
 #include <QAbstractButton>
 #include <memory>
+#include <QCommonStyle>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -27,6 +28,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setStretchLastSection(false);
+
+    QCommonStyle style;
+    ui->action_scan->setIcon(style.standardIcon(QCommonStyle::SP_DialogOpenButton));
 
     qRegisterMetaType<QVector<QVector<QString>>>();
     ui->pushButton->setVisible(false);
