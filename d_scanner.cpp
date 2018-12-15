@@ -23,18 +23,7 @@ QByteArray d_scanner::get_file_hash(QString const& path) {
     QFile file(path);
 
     if (file.open(QIODevice::ReadOnly)) {
-        const size_t BUFFER_SIZE = 4096;
-        QByteArray content;
-        while (true) {
-            content = file.read(BUFFER_SIZE);
-            if (content.size() == 0) {
-                break;
-            }
-            if (isInterruptionRequested()) {
-                return QByteArray();
-            }
-            qhash.addData(content);
-        }
+        qhash.addData(&file);
     } else {
         if (!isInterruptionRequested()) {
             emit throw_message(QString("Couldn't open file: ").append(path));
@@ -45,27 +34,25 @@ QByteArray d_scanner::get_file_hash(QString const& path) {
     return qhash.result();
 }
 
-QVector<QString> d_scanner::first_observe(QString const& dir) {
-    QHash<qint64, QVector<QString>> clasters;
+QVector<QVector<QString>> d_scanner::first_observe(QString const& dir) {
+    QHash<qint64, QVector<QString>> clusters;
     QDirIterator it(dir, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     while (it.hasNext()) {
         QString path = it.next();
-        clasters[it.fileInfo().size()].append(std::move(path));
+        clusters[it.fileInfo().size()].append(std::move(path));
         if (isInterruptionRequested()) {
             return {};
         }
     }
 
-    QVector<QString> res;
+    QVector<QVector<QString>> res;
 
-    for (auto&& claster : clasters) {
-        if (claster.size() <= 1) {
+    for (auto&& cluster : clusters) {
+        if (cluster.size() <= 1) {
             continue;
         }
 
-        for (auto&& file : claster) {
-            res.append(std::move(file));
-        }
+        res.append(std::move(cluster));
 
         if (isInterruptionRequested()) {
             return {};
@@ -76,30 +63,33 @@ QVector<QString> d_scanner::first_observe(QString const& dir) {
 }
 
 void d_scanner::find_duplicates(QString const& dir) {
-    auto files = first_observe(dir);
+    auto clusters = first_observe(dir);
 
     QHash<QByteArray, QVector<QString>> duplicates;
     QVector<QByteArray> duplicate_hashes;
-    qint64 cur_size = 0, prev_size = 0;
 
     size_t counter = 0;
-    emit return_files_number(files.size());
-    for (auto&& file : files) {
-        counter++;
-        cur_size = QFile(file).size();
-        if (cur_size != prev_size && duplicate_hashes.size() > RELEASE_NUMBER) {
+    for (auto&& cluster : clusters) {
+        counter += cluster.size();
+    }
+    emit return_files_number(counter);
+    counter = 0;
+    for (auto&& cluster : clusters) {
+        counter += cluster.size();
+        for (auto&& file : cluster) {
+            QByteArray hash = get_file_hash(file);
+            duplicates[hash].append(std::move(file));
+
+            if(duplicates[hash].size() == 2) {
+                duplicate_hashes.append(std::move(hash));
+            }
+
+            if(isInterruptionRequested()) {
+                return;
+            }
+        }
+        if (duplicate_hashes.size() > RELEASE_NUMBER) {
             release_duplicates(duplicate_hashes, duplicates, counter);
-        }
-        prev_size = cur_size;
-
-        QByteArray hash = get_file_hash(file);
-        duplicates[hash].append(std::move(file));
-        if (duplicates[hash].size() == 2) {
-            duplicate_hashes.append(std::move(hash));
-        }
-
-        if (isInterruptionRequested()) {
-            return;
         }
     }
 
@@ -110,7 +100,7 @@ void d_scanner::run() {
     find_duplicates(root);
 }
 
-void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, size_t counter, bool last) {
+void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>>& duplicates, size_t counter, bool last) {
     if (isInterruptionRequested()) {
         return;
     }
@@ -119,7 +109,8 @@ void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray
     for (auto&& hash : hashes) {
         res.append(duplicates[hash]);
     }
-    hashes.resize(0);
+    hashes.clear();
+    duplicates.clear();
 
 
     emit return_duplicates(res, counter, last);

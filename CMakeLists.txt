@@ -21,4 +21,4 @@ add_executable(frdupl
         mainwindow.h
         mainwindow.ui)
 
-qt5_use_modules(frdupl Widgets)
+qt5_use_modules(frdupl Widgets QuickControls2)

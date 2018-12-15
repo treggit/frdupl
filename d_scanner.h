@@ -22,9 +22,9 @@ public:
 
 private:
     QByteArray get_file_hash(QString const& path);
-    QVector<QString> first_observe(QString const& dir);
+    QVector<QVector<QString>> first_observe(QString const& dir);
 
-    void release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, size_t counter, bool last = false);
+    void release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>>& duplicates, size_t counter, bool last = false);
     const size_t RELEASE_NUMBER = 100;
 
     QString root;

@@ -15,6 +15,7 @@
 #include <memory>
 #include <QCommonStyle>
 #include <QProgressBar>
+#include <QQuickStyle>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -22,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent) :
     scanner(new d_scanner)
 {
     ui->setupUi(this);
-
+    QQuickStyle::setStyle("Imagine");
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), qApp->desktop()->availableGeometry()));
 
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::Stretch);
@@ -79,6 +80,7 @@ void MainWindow::on_action_scan_triggered()
 }
 
 void MainWindow::prepare_window_for_scanning() {
+    setWindowTitle(QString("Duplicates - %1").arg(current_dir));
     ui->treeWidget->clear();
     ui->pushButton->setVisible(true);
     ui->progressBar->reset();
@@ -91,7 +93,6 @@ void MainWindow::show_info() {
     ui->pushButton->setVisible(false);
     ui->label->setText(QString("In progress... Done! %1 groups of duplicates were found.").arg(QString::number(duplicate_groups_cnt)));
     scanning = false;
-    setWindowTitle(QString("Duplicates - %1").arg(current_dir));
 }
 
 void MainWindow::add_duplicates(QVector<QVector<QString>> duplicates, size_t counter, bool last) {
