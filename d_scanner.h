@@ -24,14 +24,15 @@ private:
     QByteArray get_file_hash(QString const& path);
     QVector<QString> first_observe(QString const& dir);
 
-    void release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, bool last = false);
+    void release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, size_t counter, bool last = false);
     const size_t RELEASE_NUMBER = 100;
 
     QString root;
 
 signals:
-    void return_duplicates(QVector<QVector<QString>> duplicates, bool last = false);
+    void return_duplicates(QVector<QVector<QString>> duplicates, size_t counter, bool last = false);
     void throw_message(QString text);
+    void return_files_number(size_t num);
 };
 
 #endif // SCANNER_H

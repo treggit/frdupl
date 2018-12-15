@@ -82,10 +82,13 @@ void d_scanner::find_duplicates(QString const& dir) {
     QVector<QByteArray> duplicate_hashes;
     qint64 cur_size = 0, prev_size = 0;
 
+    size_t counter = 0;
+    emit return_files_number(files.size());
     for (auto&& file : files) {
+        counter++;
         cur_size = QFile(file).size();
         if (cur_size != prev_size && duplicate_hashes.size() > RELEASE_NUMBER) {
-            release_duplicates(duplicate_hashes, duplicates);
+            release_duplicates(duplicate_hashes, duplicates, counter);
         }
         prev_size = cur_size;
 
@@ -100,14 +103,14 @@ void d_scanner::find_duplicates(QString const& dir) {
         }
     }
 
-    release_duplicates(duplicate_hashes, duplicates, true);
+    release_duplicates(duplicate_hashes, duplicates, counter, true);
 }
 
 void d_scanner::run() {
     find_duplicates(root);
 }
 
-void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, bool last) {
+void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray, QVector<QString>> const& duplicates, size_t counter, bool last) {
     if (isInterruptionRequested()) {
         return;
     }
@@ -119,5 +122,5 @@ void d_scanner::release_duplicates(QVector<QByteArray>& hashes, QHash<QByteArray
     hashes.resize(0);
 
 
-    emit return_duplicates(res, last);
+    emit return_duplicates(res, counter, last);
 }

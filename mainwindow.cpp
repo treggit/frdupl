@@ -14,6 +14,7 @@
 #include <QAbstractButton>
 #include <memory>
 #include <QCommonStyle>
+#include <QProgressBar>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -33,9 +34,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->action_scan->setIcon(style.standardIcon(QCommonStyle::SP_DialogOpenButton));
 
     qRegisterMetaType<QVector<QVector<QString>>>();
+    qRegisterMetaType<size_t>("size_t");
     ui->pushButton->setVisible(false);
     ui->treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-
+    ui->progressBar->reset();
     init_connections();
 }
 
@@ -45,8 +47,8 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::init_connections() {
-    connect(scanner.get(), SIGNAL(return_duplicates(QVector<QVector<QString>>, bool)),
-            this, SLOT(add_duplicates(QVector<QVector<QString>>, bool)));
+    connect(scanner.get(), SIGNAL(return_duplicates(QVector<QVector<QString>>, size_t, bool)),
+            this, SLOT(add_duplicates(QVector<QVector<QString>>, size_t, bool)));
 
     connect(scanner.get(), SIGNAL(throw_message(QString)), this, SLOT(message_handler(QString)));
 
@@ -57,7 +59,7 @@ void MainWindow::init_connections() {
             this, SLOT(open_file()));
 
     connect(ui->pushButton, SIGNAL(clicked(bool)), this, SLOT(try_exit_scanning()));
-
+    connect(scanner.get(), SIGNAL(return_files_number(size_t)), this, SLOT(set_progress_bar(size_t)));
 }
 
 void MainWindow::on_action_scan_triggered()
@@ -79,6 +81,7 @@ void MainWindow::on_action_scan_triggered()
 void MainWindow::prepare_window_for_scanning() {
     ui->treeWidget->clear();
     ui->pushButton->setVisible(true);
+    ui->progressBar->reset();
     ui->label->setText("In progress...");
     scanning = true;
     duplicate_groups_cnt = 0;
@@ -91,11 +94,12 @@ void MainWindow::show_info() {
     setWindowTitle(QString("Duplicates - %1").arg(current_dir));
 }
 
-void MainWindow::add_duplicates(QVector<QVector<QString>> duplicates, bool last) {
+void MainWindow::add_duplicates(QVector<QVector<QString>> duplicates, size_t counter, bool last) {
     duplicate_groups_cnt += duplicates.size();
     if (last) {
         show_info();
     }
+    ui->progressBar->setValue(counter);
     for (auto&& d_group : duplicates) {
         auto item = new QTreeWidgetItem(ui->treeWidget);
         qint64 sz = QFile(d_group[0]).size();
@@ -193,4 +197,8 @@ void MainWindow::kill_scanner() {
 
 void MainWindow::closeEvent(QCloseEvent* event) {
     kill_scanner();
+}
+
+void MainWindow::set_progress_bar(size_t max) {
+    ui->progressBar->setMaximum(max);
 }
